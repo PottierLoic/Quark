@@ -1,0 +1,12 @@
+fnc fibonacci(n int) int ->
+  ret match n ->
+    | 0 -> 0
+    | 1 -> 1
+    | _ -> fibonacci(n - 1) + fibonacci(n - 2)
+end
+
+fnc main() int ->
+  let result = fibonacci(10)
+  print(result)
+  ret 0
+end

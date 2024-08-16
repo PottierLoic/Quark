@@ -1,0 +1,11 @@
+fnc main() int ->
+  let numbers = [12, 54, 908, 51, 32, 45, 7, 88, 29, 73]
+  let result = numbers
+    |> filter(e -> e >= 50)
+    |> map(e -> e * 2)
+    |> filter(e -> e % 3 == 0)
+    |> sum()
+
+  print(result)
+  ret 0
+end

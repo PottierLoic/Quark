@@ -1,0 +1,4 @@
+fnc main() int ->
+  print('Hello world !')
+  ret 0
+end
