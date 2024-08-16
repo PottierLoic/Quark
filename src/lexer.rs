@@ -1,3 +1,5 @@
+use crate::errors::{Error, Result};
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
   Fnc,                    // "fnc"
@@ -21,7 +23,7 @@ pub enum Token {
   Unknown,                // For anything not recognized
 }
 
-pub fn tokenize(input: &str) -> Vec<Token> {
+pub fn tokenize(input: &str) -> Result<Vec<Token>> {
   let mut tokens = Vec::new();
   let mut chars = input.chars().peekable();
 
@@ -103,12 +105,11 @@ pub fn tokenize(input: &str) -> Vec<Token> {
         chars.next();
       }
       _ => {
-        tokens.push(Token::Unknown);
-        chars.next();
+        return Err(Error::LexicalError(format!("Unexpected character '{}' at position {}", ch, input.len() - chars.clone().count())));
       }
     }
   }
 
   tokens.push(Token::EOF);
-  tokens
+  Ok(tokens)
 }

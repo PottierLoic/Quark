@@ -5,10 +5,13 @@ use std::fs;
 
 mod lexer;
 mod ast;
-mod c_gen;
+mod parser;
+mod checker;
+mod c_generator;
+mod errors;
 
 fn main() {
-  let quark_code = "
+  let source = "
     fnc main() int ->
       let x = 5
       let y = x + 2
@@ -17,26 +20,24 @@ fn main() {
     end
   ";
 
-  let mut tokens = lexer::tokenize(quark_code);
-  for i in 0..tokens.len() {
-    println!("{:?}", tokens[i]);
+  match lexer::tokenize(source) {
+    Ok(mut tokens) => {
+      match parser::parse(&mut tokens) {
+        Ok(ast) => {
+          let mut file = File::create("output.c").expect("Failed to create a C file");
+          file.write_all(c_generator::generate_c_code(&ast).as_bytes())
+            .expect("Failed to write to C file");
+        }
+        Err(e) => eprintln!("Parsing Error: {}", e),
+      }
+    }
+    Err(e) => eprintln!("Lexical Error: {}", e),
   }
 
-  let output_ast = ast::parse(&mut tokens);
-  println!("{:#?}", output_ast);
-
-  let c_code = c_gen::generate_c_code(&output_ast);
-  println!("{}", c_code);
-
-  let file_name = "output.c";
-
-  let mut file = File::create(file_name).expect("Failed to create a C file");
-  file.write_all(c_code.as_bytes()).expect("Failed to write to C file");
-
   Command::new("gcc")
-    .args(&[file_name, "-o", "output"])
+    .args(&["output.c", "-o", "output"])
     .status()
     .expect("Failed to compile C code");
 
-  fs::remove_file(file_name).expect("Failed to delete C file");
+  fs::remove_file("output.c").expect("Failed to delete C file");
 }
