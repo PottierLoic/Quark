@@ -5,13 +5,14 @@ use std::fs;
 
 mod lexer;
 mod ast;
-mod gen;
+mod c_gen;
 
 fn main() {
   let quark_code = "
     fnc main() int ->
       let x = 5
       let y = x + 2
+      print(y)
       ret y
     end
   ";
@@ -24,7 +25,7 @@ fn main() {
   let output_ast = ast::parse(&mut tokens);
   println!("{:#?}", output_ast);
 
-  let c_code = gen::generate_c_code(&output_ast);
+  let c_code = c_gen::generate_c_code(&output_ast);
   println!("{}", c_code);
 
   let file_name = "output.c";

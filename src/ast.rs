@@ -16,6 +16,7 @@ pub enum Statement {
   While(Expr, Vec<Statement>),                       // while expr -> ...
   Function(String, Vec<(String, String)>, Vec<Statement>),     // fnc name(args) ->
   Block(Vec<Statement>),                             // General block of statements
+  Expr(Expr)                                         // Standalone expression as a statement
 }
 
 fn parse_let(tokens: &mut Vec<Token>) -> Statement {
@@ -41,7 +42,28 @@ fn parse_expr(tokens: &mut Vec<Token>) -> Expr {
   // parsing primary expression
   let mut left = match tokens.remove(0) {
     Token::Number(n) => Expr::Number(n),
-    Token::Identifier(name) => Expr::Identifier(name),
+    Token::Identifier(name) => {
+      // Check if this identifier is a function call
+      if let Some(Token::OpenParen) = tokens.get(0) {
+        tokens.remove(0); // Remove the '('
+        let mut args = Vec::new();
+        // Parse function arguments
+        while let Some(token) = tokens.get(0) {
+          if let Token::CloseParen = token {
+            tokens.remove(0); // Remove the ')'
+            break;
+          }
+          if let Token::Comma = token {
+            tokens.remove(0); // Remove the ','
+            continue;
+          }
+          args.push(parse_expr(tokens));
+        }
+        Expr::Call(name, args)
+      } else {
+        Expr::Identifier(name)
+      }
+    },
     _ => panic!("Unexpected token in expression"),
   };
   // Checking binary operator following the expression
@@ -108,6 +130,7 @@ fn parse_fnc(tokens: &mut Vec<Token>) -> Statement {
         body.push(parse_return(tokens));
       }
       _ => {
+        body.push(Statement::Expr(parse_expr(tokens)));
       }
     }
   }
