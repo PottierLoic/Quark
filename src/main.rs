@@ -1,7 +1,7 @@
+use std::env;
+use std::fs::{self, File};
+use std::io::{Read, Write};
 use std::process::Command;
-use std::fs::File;
-use std::io::Write;
-use std::fs;
 
 mod lexer;
 mod ast;
@@ -11,16 +11,26 @@ mod c_generator;
 mod errors;
 
 fn main() {
-  let source = "
-    fnc main() int ->
-      let x = 5
-      let y = x + 2
-      print(y)
-      ret y
-    end
-  ";
+  let args: Vec<String> = env::args().collect();
+  if args.len() != 2 {
+    eprintln!("Usage: quark <source_file.quark>");
+    std::process::exit(1);
+  }
 
-  match lexer::tokenize(source) {
+  let source_file = &args[1];
+  let mut source = String::new();
+  match File::open(source_file) {
+    Ok(mut file) => {
+      file.read_to_string(&mut source)
+        .expect("Failed to read source file");
+    }
+    Err(e) => {
+      eprintln!("Failed to open source file: {}", e);
+      std::process::exit(1);
+    }
+  }
+
+  match lexer::tokenize(&source) {
     Ok(mut tokens) => {
       match parser::parse(&mut tokens) {
         Ok(ast) => {

@@ -20,7 +20,6 @@ pub enum Token {
   Arrow,                  // "->"
   Comma,                  // ","
   EOF,                    // End of file/input
-  Unknown,                // For anything not recognized
 }
 
 pub fn tokenize(input: &str) -> Result<Vec<Token>> {
@@ -29,7 +28,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>> {
 
   while let Some(&ch) = chars.peek() {
     match ch {
-      ' ' | '\n' | '\t' => { chars.next(); } // Skip whitespace
+      ' ' | '\n' | '\t' | '\r' => { chars.next(); } // Skip whitespace / newlines
       '(' => {
         tokens.push(Token::OpenParen);
         chars.next();

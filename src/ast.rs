@@ -3,7 +3,7 @@ pub enum Expr {
   Number(i32),
   Identifier(String),
   BinaryOp(Box<Expr>, String, Box<Expr>), // x + y
-  Call(String, Vec<Expr>),                // func(a, b) TODO
+  Call(String, Vec<Expr>),                // func(a, b)
 }
 
 #[derive(Debug)]

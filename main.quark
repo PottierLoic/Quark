@@ -1,0 +1,6 @@
+fnc main() int ->
+  let x = 5
+  let y = x + 2
+  print(y)
+  ret y
+end
