@@ -1,0 +1,14 @@
+struct Point ->
+  int x
+  int y
+end
+
+fnc Point.print() ->
+  print("x: " + this.x + "| y: " + this.y);
+end
+
+fnc main() int ->
+  let p = Point{x: 10, y: 20}
+  p.print()
+  ret 0
+end

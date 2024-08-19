@@ -1,0 +1,7 @@
+fnc main() int ->
+  let greeting = "Hello"
+  let name = "World"
+  let message = greeting + ", " + name + "!"
+  print(message)
+  ret 0
+end

@@ -1,0 +1,62 @@
+// Define a struct to represent a Weather data point
+struct WeatherData ->
+  float temperature
+  float humidity
+  string condition
+end
+
+// Define a method to print weather data
+fnc WeatherData.print() null ->
+  print("Temperature: " + this.temperature + "°C, Humidity: " + this.humidity + "%, Condition: " + this.condition)
+end
+
+// Function to calculate the average temperature from a list of WeatherData
+fnc calculate_average_temperature(data_list: [WeatherData]) float ->
+  let total = 0.0
+  for data in data_list ->
+    total = total + data.temperature
+  ret total / data_list.length()
+end
+
+// Function to filter weather data based on a specific condition
+fnc filter_by_condition(data_list: [WeatherData], cond: string) [WeatherData] ->
+  ret data_list |> filter(d -> d.condition == cond)
+end
+
+// Function to demonstrate pattern matching with weather conditions
+fnc describe_weather_condition(data: WeatherData) string ->
+  ret match data.condition
+    | "Sunny" -> "It's a bright and sunny day!"
+    | "Rainy" -> "Don't forget your umbrella!"
+    | "Cloudy" -> "The sky is overcast, but no rain yet."
+    | _ -> "Weather condition is unusual."
+end
+
+// Main function
+fnc main() int ->
+  // Create a list of weather data
+  let weather_list = [
+    WeatherData{temperature: 23.4, humidity: 60.5, condition: "Sunny"},
+    WeatherData{temperature: 19.2, humidity: 80.1, condition: "Rainy"},
+    WeatherData{temperature: 21.0, humidity: 70.3, condition: "Cloudy"},
+    WeatherData{temperature: 24.5, humidity: 55.2, condition: "Sunny"}
+  ]
+
+  // Calculate and print the average temperature
+  let avg_temp = calculate_average_temperature(weather_list)
+  print("Average Temperature: " + avg_temp + "°C")
+
+  // Filter weather data for sunny days and print each entry
+  let sunny_days = filter_by_condition(weather_list, "Sunny")
+  print("Sunny Days:")
+  for day in sunny_days ->
+    day.print()
+
+  // Describe the weather condition of the first entry in the list
+  let first_day = weather_list[0]
+  let description = describe_weather_condition(first_day)
+  print("Weather Description: " + description)
+
+  // Return from main
+  ret 0
+end
