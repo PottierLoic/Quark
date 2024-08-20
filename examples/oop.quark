@@ -1,10 +1,23 @@
 struct Point ->
   int x
   int y
-end
 
-fnc Point.print() ->
-  print("x: " + this.x + "| y: " + this.y);
+  // object functions
+  fnc print(self) ->
+    print("x: " + self.x + "| y: " + self.y);
+  end
+
+  // first add function declaration
+  fnc add(self, Point p) ->
+    self.x += p.x
+    self.y += p.y
+  end
+
+  // second add function declaration
+  fnc add(self, int x, int y) ->
+    self.x += x
+    self.y += y
+  end
 end
 
 fnc main() int ->
