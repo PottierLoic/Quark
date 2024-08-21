@@ -1,3 +1,13 @@
+// #[derive(Debug, Clone, PartialEq)]
+// pub enum Type {
+//   Int,
+//   Float,
+//   String,
+//   Bool,
+//   Void, // Non return type
+//   Unknown, // Should never happend
+// }
+
 #[derive(Debug)]
 pub enum Expr {
   Number(i32),

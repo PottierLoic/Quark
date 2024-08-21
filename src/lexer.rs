@@ -1,4 +1,4 @@
-use crate::errors::{Error, Result};
+use crate::errors::Error;
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
@@ -19,10 +19,10 @@ pub enum Token {
   CloseParen,             // ")"
   Arrow,                  // "->"
   Comma,                  // ","
-  EOF,                    // End of file/input
+  Eof,                    // End of file/input
 }
 
-pub fn tokenize(input: &str) -> Result<Vec<Token>> {
+pub fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
   let mut tokens = Vec::new();
   let mut chars = input.chars().peekable();
 
@@ -49,7 +49,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>> {
       '0'..='9' => {
         let mut num_str = String::new();
         while let Some(&ch) = chars.peek() {
-          if ch.is_digit(10) {
+          if ch.is_ascii_digit() {
             num_str.push(ch);
             chars.next();
           } else {
@@ -104,11 +104,11 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>> {
         chars.next();
       }
       _ => {
-        return Err(Error::LexicalError(format!("Unexpected character '{}' at position {}", ch, input.len() - chars.clone().count())));
+        return Err(Error::Lexical(format!("Unexpected character '{}' at position {}", ch, input.len() - chars.clone().count())));
       }
     }
   }
 
-  tokens.push(Token::EOF);
+  tokens.push(Token::Eof);
   Ok(tokens)
 }

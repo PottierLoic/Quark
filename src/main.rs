@@ -2,6 +2,7 @@ use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::process::Command;
+use std::error::Error;
 
 mod lexer;
 mod ast;
@@ -10,7 +11,7 @@ mod checker;
 mod c_generator;
 mod errors;
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>>{
   let args: Vec<String> = env::args().collect();
   if args.len() != 2 {
     eprintln!("Usage: quark <source_file.quark>");
@@ -19,35 +20,23 @@ fn main() {
 
   let source_file = &args[1];
   let mut source = String::new();
-  match File::open(source_file) {
-    Ok(mut file) => {
-      file.read_to_string(&mut source)
-        .expect("Failed to read source file");
-    }
-    Err(e) => {
-      eprintln!("Failed to open source file: {}", e);
-      std::process::exit(1);
-    }
-  }
+  File::open(source_file)?.read_to_string(&mut source)?;
 
-  match lexer::tokenize(&source) {
-    Ok(mut tokens) => {
-      match parser::parse(&mut tokens) {
-        Ok(ast) => {
-          let mut file = File::create("output.c").expect("Failed to create a C file");
-          file.write_all(c_generator::generate_c_code(&ast).as_bytes())
-            .expect("Failed to write to C file");
-        }
-        Err(e) => eprintln!("Parsing Error: {}", e),
-      }
-    }
-    Err(e) => eprintln!("Lexical Error: {}", e),
-  }
+  let mut tokens = lexer::tokenize(&source)?;
+  let ast = parser::parse(&mut tokens)?;
+  let c_code = c_generator::generate_c_code(&ast)?;
+
+  let mut file = File::create("output.c")?;
+  file.write_all(c_code.as_bytes())?;
 
   Command::new("gcc")
-    .args(&["output.c", "-o", "output"])
-    .status()
-    .expect("Failed to compile C code");
+    .args(["output.c", "-o", "output"])
+    .status()?
+    .success()
+    .then_some(())
+    .ok_or("Failed to compile C code")?;
 
-  fs::remove_file("output.c").expect("Failed to delete C file");
+  fs::remove_file("output.c")?;
+
+  Ok(())
 }
