@@ -1,9 +1,9 @@
 #[derive(Debug)]
 pub enum Error {
-  Lexical(String),  // Errors during tokenization
-  Syntax(String),   // Errors during parsing
-  Type(String),     // Errors during type checking
-  CodeGen(String),  // Errors during code generation
+  Lexical(String),
+  Syntax(String),
+  Type(String),
+  CodeGen(String),
 }
 
 impl std::fmt::Display for Error {

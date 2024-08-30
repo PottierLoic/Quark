@@ -1,6 +1,6 @@
 use crate::errors::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
   Fnc,                    // "fnc"
   Let,                    // "let"
@@ -12,14 +12,21 @@ pub enum Token {
   Match,                  // "match"
   End,                    // "end"
   Identifier(String),     // Variable names and function names
-  Number(i32),            // Numeric literals
+  Number(f64),            // Numeric literals
   StringLiteral(String),  // String literals
   Operator(String),       // Operators like +, -, *, /, =
   OpenParen,              // "("
   CloseParen,             // ")"
+  OpenBracket,            // "["
+  CloseBracket,           // "]"
   Arrow,                  // "->"
   Comma,                  // ","
+  Colon,                  // ":"
   Eof,                    // End of file/input
+  TypeInt,
+  TypeFloat,
+  TypeString,
+  TypeBool,
 }
 
 pub fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
@@ -37,13 +44,25 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
         tokens.push(Token::CloseParen);
         chars.next();
       }
+      '[' => {
+        tokens.push(Token::OpenBracket);
+        chars.next();
+      }
+      ']' => {
+        tokens.push(Token::CloseBracket);
+        chars.next();
+      }
+      ':' => {
+        tokens.push(Token::Colon);
+        chars.next();
+      }
       '-' => {
         chars.next();
         if let Some('>') = chars.peek() {
           tokens.push(Token::Arrow);
           chars.next();
         } else {
-          tokens.push(Token::Operator("-".to_string()));
+          tokens.push(Token::Operator("-".to_string())); 
         }
       }
       '0'..='9' => {
@@ -56,7 +75,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
             break;
           }
         }
-        let number = num_str.parse::<i32>().unwrap();
+        let number = num_str.parse::<f64>().unwrap();
         tokens.push(Token::Number(number));
       }
       'a'..='z' | 'A'..='Z' | '_' => {
@@ -79,6 +98,10 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
           "for" => tokens.push(Token::For),
           "match" => tokens.push(Token::Match),
           "end" => tokens.push(Token::End),
+          "int" => tokens.push(Token::TypeInt),
+          "float" => tokens.push(Token::TypeFloat),
+          "string" => tokens.push(Token::TypeString),
+          "bool" => tokens.push(Token::TypeBool),
           _ => tokens.push(Token::Identifier(ident_str)),
         }
       }

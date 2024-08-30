@@ -1,28 +1,36 @@
-// #[derive(Debug, Clone, PartialEq)]
-// pub enum Type {
-//   Int,
-//   Float,
-//   String,
-//   Bool,
-//   Void, // Non return type
-//   Unknown, // Should never happend
-// }
+#[derive(Debug, Clone, PartialEq)]
+pub enum Type {
+  Int,
+  Float,
+  String,
+  Bool,
+  Void,
+  Array(Box<Type>),
+  Unknown,
+}
 
 #[derive(Debug)]
 pub enum Expr {
-  Number(i32),
+  Number(f64),
+  String(String),
+  Boolean(bool),
   Identifier(String),
-  BinaryOp(Box<Expr>, String, Box<Expr>), // x + y
-  Call(String, Vec<Expr>),                // func(a, b)
+  BinaryOp(Box<Expr>, String, Box<Expr>),
+  UnaryOp(String, Box<Expr>),
+  Call(String, Vec<Expr>),
+  ArrayLiteral(Vec<Expr>),
+  ArrayAccess(Box<Expr>, Box<Expr>),
+  Ternary(Box<Expr>, Box<Expr>, Box<Expr>),
 }
 
 #[derive(Debug)]
 pub enum Statement {
-  Let(String, Expr),       // let x = expr;
-  Return(Expr),            // ret expr;
-  If(Expr, Vec<Statement>, Option<Vec<Statement>>),  // if expr -> ... else ...
-  While(Expr, Vec<Statement>),                       // while expr -> ...
-  Function(String, Vec<(String, String)>, Vec<Statement>),     // fnc name(args) ->
-  Block(Vec<Statement>),                             // General block of statements
-  Expr(Expr)                                         // Standalone expression as a statement
+  Let(String, Option<Type>, Expr),
+  Return(Option<Expr>),
+  If(Expr, Vec<Statement>, Option<Vec<Statement>>),
+  While(Expr, Vec<Statement>),
+  For(String, Expr, Vec<Statement>),
+  Function(String, Vec<(String, Type)>, Type, Vec<Statement>),
+  Block(Vec<Statement>),
+  Expr(Expr),
 }

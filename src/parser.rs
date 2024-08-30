@@ -1,136 +1,192 @@
 use crate::lexer::Token;
-use crate::ast::{Expr, Statement};
+use crate::ast::{Expr, Statement, Type};
 use crate::errors::Error;
 
-fn parse_let(tokens: &mut Vec<Token>) -> Result<Statement, Error> {
-  tokens.remove(0); // assuming the first token is "let"
-  if let Token::Identifier(name) = tokens.remove(0) {
-    if let Token::Operator(op) = tokens.remove(0) {
-      if op == "=" {
-        let expr = parse_expr(tokens)?;
-        return Ok(Statement::Let(name, expr));
+fn parse_type(tokens: &mut Vec<Token>) -> Result<Type, Error> {
+  match tokens.remove(0) {
+    Token::Identifier(type_name) => match type_name.as_str() {
+      "int" => Ok(Type::Int),
+      "float" => Ok(Type::Float),
+      "string" => Ok(Type::String),
+      "bool" => Ok(Type::Bool),
+      "void" => Ok(Type::Void),
+      _ => Err(Error::Syntax(format!("Unknown type: {}", type_name))),
+    },
+    Token::OpenBracket => {
+      tokens.remove(0); // Remove '['
+      let inner_type = parse_type(tokens)?;
+      if let Token::CloseBracket = tokens.remove(0) {
+        Ok(Type::Array(Box::new(inner_type)))
+      } else {
+        Err(Error::Syntax("Expected ']' after array type".into()))
       }
-    }
+    },
+    _ => Err(Error::Syntax("Expected type".into())),
   }
-  Err(Error::Syntax("Syntax error in let statement".into()))
 }
 
-fn parse_return(tokens: &mut Vec<Token>) -> Result<Statement, Error> {
-  tokens.remove(0); // assuming the first token is "ret"
-  let expr = parse_expr(tokens)?;
-  Ok(Statement::Return(expr))
+fn parse_let(tokens: &mut Vec<Token>) -> Result<Statement, Error> {
+  tokens.remove(0); // Remove 'let'
+  let name = match tokens.remove(0) {
+    Token::Identifier(name) => name,
+    _ => return Err(Error::Syntax("Expected identifier after 'let'".into())),
+  };
+  
+  let type_annotation = if let Some(Token::Colon) = tokens.first() {
+    tokens.remove(0); // Remove ':'
+    Some(parse_type(tokens)?)
+  } else {
+    None
+  };
+
+  if let Token::Operator(op) = tokens.remove(0) {
+    if op == "=" {
+      let expr = parse_expr(tokens)?;
+      Ok(Statement::Let(name, type_annotation, expr))
+    } else {
+      Err(Error::Syntax("Expected '=' in let statement".into()))
+    }
+  } else {
+    Err(Error::Syntax("Expected '=' in let statement".into()))
+  }
 }
 
 fn parse_expr(tokens: &mut Vec<Token>) -> Result<Expr, Error> {
-  // parsing primary expression
-  let mut left = match tokens.remove(0) {
-    Token::Number(n) => Expr::Number(n),
-    Token::Identifier(name) => {
-      // Check if this identifier is a function call
-      if let Some(Token::OpenParen) = tokens.first() {
-        tokens.remove(0); // Remove the '('
-        let mut args = Vec::new();
-        // Parse function arguments
-        while let Some(token) = tokens.first() {
-          if let Token::CloseParen = token {
-            tokens.remove(0); // Remove the ')'
-            break;
-          }
-          if let Token::Comma = token {
-            tokens.remove(0); // Remove the ','
-            continue;
-          }
-          args.push(parse_expr(tokens)?);
-        }
-        Expr::Call(name, args)
-      } else {
-        Expr::Identifier(name)
-      }
-    },
-    _ => return Err(Error::Syntax("Unexpected token in expression".into())),
-  };
-  // Checking binary operator following the expression
-  while let Some(Token::Operator(op)) = tokens.first() {
-    let op = op.clone();
-    tokens.remove(0);
-    let right = parse_expr(tokens)?;
-    left = Expr::BinaryOp(Box::new(left), op, Box::new(right));
-  }
-  Ok(left)
+    match tokens.remove(0) {
+        Token::Number(n) => Ok(Expr::Number(n)),
+        Token::StringLiteral(s) => Ok(Expr::String(s)),
+        Token::Identifier(name) => {
+            if let Some(Token::OpenParen) = tokens.first() {
+                tokens.remove(0); // Remove the '('
+                let mut args = Vec::new();
+                while let Some(token) = tokens.first() {
+                    if let Token::CloseParen = token {
+                        tokens.remove(0); // Remove the ')'
+                        break;
+                    }
+                    if let Token::Comma = token {
+                        tokens.remove(0); // Remove the ','
+                        continue;
+                    }
+                    args.push(parse_expr(tokens)?);
+                }
+                Ok(Expr::Call(name, args))
+            } else if let Some(Token::OpenBracket) = tokens.first() {
+                tokens.remove(0); // Remove '['
+                let index = parse_expr(tokens)?;
+                if let Token::CloseBracket = tokens.remove(0) {
+                    Ok(Expr::ArrayAccess(Box::new(Expr::Identifier(name)), Box::new(index)))
+                } else {
+                    Err(Error::Syntax("Expected ']' after array index".into()))
+                }
+            } else {
+                Ok(Expr::Identifier(name))
+            }
+        },
+        Token::OpenBracket => {
+            let mut elements = Vec::new();
+            while let Some(token) = tokens.first() {
+                if let Token::CloseBracket = token {
+                    tokens.remove(0);
+                    break;
+                }
+                elements.push(parse_expr(tokens)?);
+                if let Some(Token::Comma) = tokens.first() {
+                    tokens.remove(0);
+                }
+            }
+            Ok(Expr::ArrayLiteral(elements))
+        },
+        _ => Err(Error::Syntax("Unexpected token in expression".into())),
+    }
 }
 
-fn parse_fnc(tokens: &mut Vec<Token>) -> Result<Statement, Error> {
-  tokens.remove(0); // Assuming the first token is "fnc"
-
-  let name = match tokens.remove(0) {
+fn parse_for(tokens: &mut Vec<Token>) -> Result<Statement, Error> {
+  tokens.remove(0); // Remove 'for'
+  let iterator = match tokens.remove(0) {
     Token::Identifier(name) => name,
-    _ => return Err(Error::Syntax("Expected function name".into())),
+    _ => return Err(Error::Syntax("Expected identifier after 'for'".into())),
   };
-
-  if let Token::OpenParen = tokens.remove(0) {
+  
+  if let Token::Identifier(keyword) = tokens.remove(0) {
+    if keyword != "in" {
+      return Err(Error::Syntax("Expected 'in' after iterator in for loop".into()));
+    }
   } else {
-    return Err(Error::Syntax("Expected '(' after function name".into()));
+    return Err(Error::Syntax("Expected 'in' after iterator in for loop".into()));
   }
-
-  let mut params = Vec::new();
-  while let Token::Identifier(param_name) = tokens.remove(0) {
-    if let Token::Identifier(param_type) = tokens.remove(0) {
-      params.push((param_name, param_type));
-    } else {
-      return Err(Error::Syntax("Expected parameter type".into()));
-    }
-
-    match tokens.remove(0) {
-      Token::CloseParen => break,
-      Token::Comma => continue,
-      _ => return Err(Error::Syntax("Expected ',' or ')' after parameter".into())),
-    }
-  }
-
-  // TODO: use this
-  let _return_type = match tokens.remove(0) {
-    Token::Identifier(ret_type) => ret_type,
-    _ => return Err(Error::Syntax("Expected return type".into())),
-  };
-
+  
+  let iterable = parse_expr(tokens)?;
+  
   if let Token::Arrow = tokens.remove(0) {
   } else {
-    return Err(Error::Syntax("Expected '->' before function body".into()));
+    return Err(Error::Syntax("Expected '->' before for loop body".into()));
   }
+  
+  let body = parse_block(tokens)?;
+  
+  Ok(Statement::For(iterator, iterable, body))
+}
 
-  let mut body = Vec::new();
+fn parse_block(tokens: &mut Vec<Token>) -> Result<Vec<Statement>, Error> {
+  let mut statements = Vec::new();
   while let Some(token) = tokens.first() {
     match token {
       Token::End => {
         tokens.remove(0);
         break;
       }
-      Token::Eof => return Err(Error::Syntax("Unexpected EOF in function body".into())),
-      Token::Let => {
-        body.push(parse_let(tokens)?);
-      }
-      Token::Return => {
-        body.push(parse_return(tokens)?);
-      }
-      _ => {
-        body.push(Statement::Expr(parse_expr(tokens)?));
-      }
+      Token::Eof => return Err(Error::Syntax("Unexpected EOF in block".into())),
+      _ => statements.push(parse_statement(tokens)?),
     }
   }
+  Ok(statements)
+}
 
-  Ok(Statement::Function(name, params, body))
+fn parse_statement(tokens: &mut Vec<Token>) -> Result<Statement, Error> {
+  match tokens[0] {
+    Token::Let => parse_let(tokens),
+    Token::Return => parse_return(tokens),
+    Token::If => parse_if(tokens),
+    Token::While => parse_while(tokens),
+    Token::For => parse_for(tokens),
+    Token::Fnc => parse_fnc(tokens),
+    _ => Ok(Statement::Expr(parse_expr(tokens)?)),
+  }
 }
 
 pub fn parse(tokens: &mut Vec<Token>) -> Result<Vec<Statement>, Error> {
   let mut statements = Vec::new();
   while !tokens.is_empty() {
     match tokens[0] {
-      Token::Let => statements.push(parse_let(tokens)?),
-      Token::Return => statements.push(parse_return(tokens)?),
-      Token::Fnc => statements.push(parse_fnc(tokens)?),
       Token::Eof => break,
-      _ => return Err(Error::Syntax(format!("Unexpected token: {:?}", tokens[0]))),
+      _ => statements.push(parse_statement(tokens)?),
     }
   }
   Ok(statements)
+}
+
+fn parse_return(tokens: &mut Vec<Token>) -> Result<Statement, Error> {
+    tokens.remove(0); // Remove 'ret'
+    let expr = if tokens.first() != Some(&Token::End) {
+        Some(parse_expr(tokens)?)
+    } else {
+        None
+    };
+    Ok(Statement::Return(expr))
+}
+
+fn parse_if(_tokens: &mut Vec<Token>) -> Result<Statement, Error> {
+    // Implement if statement parsing
+    todo!("Implement if statement parsing")
+}
+
+fn parse_while(_tokens: &mut Vec<Token>) -> Result<Statement, Error> {
+    // Implement while loop parsing
+    todo!("Implement while loop parsing")
+}
+
+fn parse_fnc(_tokens: &mut Vec<Token>) -> Result<Statement, Error> {
+    // Implement function parsing
+    todo!("Implement function parsing")
 }

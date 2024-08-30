@@ -11,7 +11,7 @@ mod checker;
 mod c_generator;
 mod errors;
 
-fn main() -> Result<(), Box<dyn Error>>{
+fn main() -> Result<(), Box<dyn Error>> {
   let args: Vec<String> = env::args().collect();
   if args.len() != 2 {
     eprintln!("Usage: quark <source_file.quark>");
@@ -22,8 +22,16 @@ fn main() -> Result<(), Box<dyn Error>>{
   let mut source = String::new();
   File::open(source_file)?.read_to_string(&mut source)?;
 
-  let mut tokens = lexer::tokenize(&source)?;
-  let ast = parser::parse(&mut tokens)?;
+  let tokens = lexer::tokenize(&source)?;
+  println!("Tokens:");
+  for token in &tokens {
+    println!("{:?}", token);
+  }
+
+  let ast = parser::parse(&mut tokens.clone())?;
+  println!("\nAST:");
+  println!("{:#?}", ast);
+
   let c_code = c_generator::generate_c_code(&ast)?;
 
   let mut file = File::create("output.c")?;
