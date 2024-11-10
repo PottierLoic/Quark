@@ -1,4 +1,3 @@
-fnc main() int ->
-  print('Hello world !')
-  ret 0
-end
+let main int ->
+  print "Hello World!";
+  ret 0;;

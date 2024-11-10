@@ -1,0 +1,7 @@
+let add a b int ->
+  ret a + b;;
+
+let main int ->
+  let result = add 5 3;
+  print result;
+  ret 0;;

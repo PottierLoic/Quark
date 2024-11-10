@@ -1,23 +1,16 @@
-// While example
-fnc main() int ->
-  let n = 10
+let main int ->
+  let n = 10;
   while n > 0 ->
-    print(n)
-    n -= 1
-  end
-  ret 0
-end
+    print(n);
+    n -= 1;;
+  ret 0;;
 
-// For example
-fnc main() int ->
-  let n = 10
+let main int ->
+  let n = 10;
   for i in 0:n ->
-    print(n)
-  end
+    print(i);;
 
-  let list = [1, 2, 3, 4, 5]
+  let list = [1, 2, 3, 4, 5];
   for i in list ->
-    print(i)
-  end
-  ret 0
-end
+    print(i);;
+  ret 0;;

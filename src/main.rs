@@ -1,15 +1,14 @@
 use std::env;
-use std::fs::{self, File};
-use std::io::{Read, Write};
-use std::process::Command;
 use std::error::Error;
+use std::fs::File;
+use std::io::Read;
 
-mod lexer;
+pub mod lexer;
+
 mod ast;
-mod parser;
 mod checker;
-mod c_generator;
 mod errors;
+mod parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
   let args: Vec<String> = env::args().collect();
@@ -28,23 +27,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("{:?}", token);
   }
 
-  let ast = parser::parse(&mut tokens.clone())?;
-  println!("\nAST:");
-  println!("{:#?}", ast);
-
-  let c_code = c_generator::generate_c_code(&ast)?;
-
-  let mut file = File::create("output.c")?;
-  file.write_all(c_code.as_bytes())?;
-
-  Command::new("gcc")
-    .args(["output.c", "-o", "output"])
-    .status()?
-    .success()
-    .then_some(())
-    .ok_or("Failed to compile C code")?;
-
-  fs::remove_file("output.c")?;
-
+  // let ast = parser::parse(&mut tokens.clone())?;
+  // println!("\nAST:");
+  // println!("{:#?}", ast);
+  //
+  // let c_code = c_generator::generate_c_code(&ast)?;
+  //
+  // let mut file = File::create("output.c")?;
+  // file.write_all(c_code.as_bytes())?;
+  //
+  // Command::new("gcc")
+  //   .args(["output.c", "-o", "output"])
+  //   .status()?
+  //   .success()
+  //   .then_some(())
+  //   .ok_or("Failed to compile C code")?;
+  //
+  // fs::remove_file("output.c")?;
+  //
   Ok(())
 }
